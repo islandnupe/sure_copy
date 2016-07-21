@@ -989,8 +989,15 @@ namespace sure_copy
 
         void CopyProgress(string FilePath, double Percentage, ref bool Cancel)
         {
-            string stringMsg = string.Format("Copying of File {0} at {1}% ", FilePath, Percentage);
-            m_eventWriteToLog(stringMsg, LogMessageType.Miscellaneous);
+            try
+            {
+                string stringMsg = string.Format("Copying of File {0} at {1:N2}% ", FilePath, Percentage);
+                m_eventWriteToLog(stringMsg, LogMessageType.Miscellaneous);
+            }
+            catch (Exception Ex)
+            {
+                //Eat the error :)
+            }
         }
 
         void CopyCompleted(string FilePath, long TotalBytes)
