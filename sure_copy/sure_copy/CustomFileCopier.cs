@@ -12,10 +12,13 @@ namespace sure_copy
 
     class CustomFileCopier
     {
-        public CustomFileCopier(string Source, string Dest)
+        int m_intBufferSizeMB = 1;
+        public CustomFileCopier(string Source, string Dest, int intBufferSizeMB = 1)
         {
             this.SourceFilePath = Source;
             this.DestFilePath = Dest;
+            this.m_intBufferSizeMB = intBufferSizeMB;
+
 
             OnProgressChanged += delegate { };
             OnComplete += delegate { };
@@ -23,7 +26,7 @@ namespace sure_copy
 
         public void Copy()
         {
-            byte[] buffer = new byte[1024 * 1024]; // 1MB buffer
+            byte[] buffer = new byte[1024 * 1024 * m_intBufferSizeMB]; // 1MB buffer
             bool cancelFlag = false;
             long totalBytes = 0;
             using (FileStream source = new FileStream(SourceFilePath, FileMode.Open, FileAccess.Read))

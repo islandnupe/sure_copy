@@ -339,9 +339,9 @@
 		<col def="S0">ISDotNetInstallerArgsCommit</col>
 		<col def="S0">ISDotNetInstallerArgsUninstall</col>
 		<col def="S0">ISDotNetInstallerArgsRollback</col>
-		<row><td>FileSystemLogger.dll</td><td>{E0D7D20C-E96F-45B5-A5F2-536A1EE2085A}</td><td>INSTALLDIR</td><td>2</td><td/><td>filesystemlogger.dll</td><td>17</td><td/><td/><td/><td>/LogFile=</td><td>/LogFile=</td><td>/LogFile=</td><td>/LogFile=</td></row>
+		<row><td>FileSystemLogger.dll</td><td>{CDCDF8A5-71EB-4F3B-8158-78701B4784F1}</td><td>INSTALLDIR</td><td>2</td><td/><td>filesystemlogger.dll</td><td>17</td><td/><td/><td/><td>/LogFile=</td><td>/LogFile=</td><td>/LogFile=</td><td>/LogFile=</td></row>
 		<row><td>ISX_DEFAULTCOMPONENT</td><td>{82D8ABA4-8F87-4F69-BF84-7DC2A0F741CC}</td><td>INSTALLDIR</td><td>2</td><td/><td/><td>17</td><td/><td/><td/><td>/LogFile=</td><td>/LogFile=</td><td>/LogFile=</td><td>/LogFile=</td></row>
-		<row><td>sure_copy.exe</td><td>{BC10A384-1840-4BD5-8EC4-928867B19243}</td><td>INSTALLDIR</td><td>2</td><td/><td>sure_copy.exe</td><td>17</td><td/><td/><td/><td>/LogFile=</td><td>/LogFile=</td><td>/LogFile=</td><td>/LogFile=</td></row>
+		<row><td>sure_copy.exe</td><td>{5DCC4090-9E96-4C8A-B6ED-6B90B7FC17B3}</td><td>INSTALLDIR</td><td>2</td><td/><td>sure_copy.exe</td><td>17</td><td/><td/><td/><td>/LogFile=</td><td>/LogFile=</td><td>/LogFile=</td><td>/LogFile=</td></row>
 	</table>
 
 	<table name="Condition">
@@ -1881,9 +1881,9 @@
 		<col def="S255">ISBuildSourcePath</col>
 		<col def="I4">ISAttributes</col>
 		<col def="S72">ISComponentSubFolder_</col>
-		<row><td>filesystemlogger.dll</td><td>FileSystemLogger.dll</td><td>FILESY~1.DLL|FileSystemLogger.dll</td><td>0</td><td/><td/><td/><td>1</td><td>C:\SourceCode\personal\sure_copy\sure_copy\bin\Release\FileSystemLogger.dll</td><td>1</td><td/></row>
-		<row><td>sure_copy.exe</td><td>sure_copy.exe</td><td>SURE_C~1.EXE|sure_copy.exe</td><td>0</td><td/><td/><td/><td>1</td><td>C:\SourceCode\personal\sure_copy\sure_copy\bin\Release\sure_copy.exe</td><td>1</td><td/></row>
-		<row><td>sure_copy.exe.config</td><td>ISX_DEFAULTCOMPONENT</td><td>SURE_C~1.CON|sure_copy.exe.config</td><td>0</td><td/><td/><td/><td>1</td><td>C:\SourceCode\personal\sure_copy\sure_copy\bin\Release\sure_copy.exe.config</td><td>1</td><td/></row>
+		<row><td>filesystemlogger.dll</td><td>FileSystemLogger.dll</td><td>FILESY~1.DLL|FileSystemLogger.dll</td><td>0</td><td/><td/><td/><td>1</td><td>C:\SourceCode\gitrepository\sure_copy\sure_copy\bin\Release\FileSystemLogger.dll</td><td>1</td><td/></row>
+		<row><td>sure_copy.exe</td><td>sure_copy.exe</td><td>SURE_C~1.EXE|sure_copy.exe</td><td>0</td><td/><td/><td/><td>1</td><td>C:\SourceCode\gitrepository\sure_copy\sure_copy\bin\Release\sure_copy.exe</td><td>1</td><td/></row>
+		<row><td>sure_copy.exe.config</td><td>ISX_DEFAULTCOMPONENT</td><td>SURE_C~1.CON|sure_copy.exe.config</td><td>0</td><td/><td/><td/><td>1</td><td>C:\SourceCode\gitrepository\sure_copy\sure_copy\bin\Release\sure_copy.exe.config</td><td>1</td><td/></row>
 	</table>
 
 	<table name="FileSFPCatalog">
@@ -2025,9 +2025,9 @@
 		<col def="S0">FTPLocation</col>
 		<col def="S0">HTTPLocation</col>
 		<col def="S0">Miscellaneous</col>
-		<row><td>FileSystemLogger.dll</td><td/><td/><td>_C2E66712_7A9C_423C_861A_4388DC91A60F_FILTER</td><td/><td/><td/><td/></row>
+		<row><td>FileSystemLogger.dll</td><td/><td/><td>_56A17C48_A081_4C3D_AB35_91627B098CA6_FILTER</td><td/><td/><td/><td/></row>
 		<row><td>ISX_DEFAULTCOMPONENT</td><td/><td/><td>_4EDDD26A_5BD9_459F_95FC_6B39A243A203_FILTER</td><td/><td/><td/><td/></row>
-		<row><td>sure_copy.exe</td><td/><td/><td>_BA91D820_D953_46F5_A882_C6D24EAE51A0_FILTER</td><td/><td/><td/><td/></row>
+		<row><td>sure_copy.exe</td><td/><td/><td>_F61DB0D3_6FC2_4CE4_9F6B_13FBF05807F3_FILTER</td><td/><td/><td/><td/></row>
 	</table>
 
 	<table name="ISCustomActionReference">
@@ -3723,6 +3723,8 @@
 		<row><td>ID_STRING3</td><td>1033</td><td>Island Technologies</td><td>0</td><td/><td>1394910029</td></row>
 		<row><td>ID_STRING4</td><td>1033</td><td>sure_copy</td><td>0</td><td/><td>1394898317</td></row>
 		<row><td>ID_STRING5</td><td>1033</td><td>Utility for copying files and folders from one location to another</td><td>0</td><td/><td>1394896301</td></row>
+		<row><td>ID_STRING6</td><td>1033</td><td>sure_copy</td><td>0</td><td/><td>631511648</td></row>
+		<row><td>ID_STRING7</td><td>1033</td><td>Utility for copying files and folders from one location to another</td><td>0</td><td/><td>631505600</td></row>
 		<row><td>IIDS_UITEXT_FeatureUninstalled</td><td>1033</td><td>This feature will remain uninstalled.</td><td>0</td><td/><td>1394928429</td></row>
 	</table>
 
@@ -3969,7 +3971,7 @@ UwBpAG4AZwBsAGUASQBtAGEAZwBlAAEARQB4AHAAcgBlAHMAcwA=
 		<row><td>ISTheme</td><td>InstallShield Blue.theme</td></row>
 		<row><td>ISUSLock</td><td>{8A75FF68-6F91-478B-983D-A23AE58A0631}</td></row>
 		<row><td>ISUSSignature</td><td>{E8DC40AB-34FA-40B8-869B-7359970548B7}</td></row>
-		<row><td>ISVisitedViews</td><td>viewAssistant,viewObjects,viewAppFiles,viewServices,viewRelease,viewUI,viewTextMessages,viewCustomActions</td></row>
+		<row><td>ISVisitedViews</td><td>viewAssistant,viewObjects,viewAppFiles,viewServices,viewRelease,viewUI,viewTextMessages,viewCustomActions,viewProject</td></row>
 		<row><td>Limited</td><td>1</td></row>
 		<row><td>LockPermissionMode</td><td>1</td></row>
 		<row><td>MsiExecCmdLineOptions</td><td/></row>
@@ -4341,8 +4343,8 @@ UwBpAG4AZwBsAGUASQBtAGEAZwBlAAEARQB4AHAAcgBlAHMAcwA=
 		<row><td>PROGMSG_IIS_ROLLBACKVROOTS</td><td>##IDS_PROGMSG_IIS_ROLLBACKVROOTS##</td><td/></row>
 		<row><td>PROGMSG_IIS_ROLLBACKWEBSERVICEEXTENSIONS</td><td>##IDS_PROGMSG_IIS_ROLLBACKWEBSERVICEEXTENSIONS##</td><td/></row>
 		<row><td>ProductCode</td><td>{B8B518CC-5C76-4009-974B-065594321A5F}</td><td/></row>
-		<row><td>ProductName</td><td>sure_copy_install</td><td/></row>
-		<row><td>ProductVersion</td><td>1.00.0000</td><td/></row>
+		<row><td>ProductName</td><td>sure_copy</td><td/></row>
+		<row><td>ProductVersion</td><td>1.10.0000</td><td/></row>
 		<row><td>ProgressType0</td><td>install</td><td/></row>
 		<row><td>ProgressType1</td><td>Installing</td><td/></row>
 		<row><td>ProgressType2</td><td>installed</td><td/></row>
@@ -4418,8 +4420,6 @@ UwBpAG4AZwBsAGUASQBtAGEAZwBlAAEARQB4AHAAcgBlAHMAcwA=
 		<col def="L255">FileName</col>
 		<col def="s72">DirProperty</col>
 		<col def="i2">InstallMode</col>
-		<row><td>FileKey1</td><td>sure_copy.exe</td><td/><td>island_1_island_technologies</td><td>2</td></row>
-		<row><td>FileKey2</td><td>sure_copy.exe</td><td/><td>sure_c_1_sure_copy_install</td><td>2</td></row>
 	</table>
 
 	<table name="RemoveIniFile">
@@ -4484,7 +4484,7 @@ UwBpAG4AZwBsAGUASQBtAGEAZwBlAAEARQB4AHAAcgBlAHMAcwA=
 		<col def="S255">Arguments</col>
 		<col def="s72">Component_</col>
 		<col def="L255">Description</col>
-		<row><td>NewServiceInstall1</td><td>sure_copy</td><td>##ID_STRING4##</td><td>16</td><td>2</td><td>1</td><td/><td/><td/><td/><td/><td>sure_copy.exe</td><td>##ID_STRING5##</td></row>
+		<row><td>NewServiceInstall1</td><td>sure_copy</td><td>##ID_STRING6##</td><td>16</td><td>2</td><td>1</td><td/><td/><td/><td/><td/><td>sure_copy.exe</td><td>##ID_STRING7##</td></row>
 	</table>
 
 	<table name="Shortcut">

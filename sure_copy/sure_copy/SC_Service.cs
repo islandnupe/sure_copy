@@ -81,6 +81,8 @@ namespace sure_copy
         int m_intFailedMD5Checks = 0;
         long m_longTotalBytesCopied = -1;
 
+        int m_intBufferSizeMB = 1;
+
         HttpServer m_HttpServer;
         int m_intHttpPort = 8181;
         int m_intHttpPortChangeTo = 8181;
@@ -168,6 +170,7 @@ namespace sure_copy
                 //m_eventWriteToLog(stringMsg, LogMessageType.MiscellaneousAlwaysDisplay);
                 stringMsg += string.Format("\r\n\r\t\t\tDetailedLogging [{0}]\r\n\r\t\t\tHALT_OPERATIONS [{1}]\r\n\r\t\t\tCheckMD5 [{2}]", m_boolDetailedLogging, m_boolUSER_HALT_OPERATIONS, m_boolCheckMD5);
                 stringMsg += string.Format("\r\n\r\t\t\tRunCompletedToday [{0}]\r\n\r\t\t\tAllowDestinationPathChangeViaHTTP [{1}]", m_boolRunCompletedToday, m_boolAllowDestinationPathChangeViaHTTP);
+                stringMsg += string.Format("\r\n\r\t\t\tCopy Buffer Size [{0}mb]", m_intBufferSizeMB);
                 m_eventWriteToLog(stringMsg, LogMessageType.MiscellaneousAlwaysDisplay);
                 stringMsg = string.Format("\r\tTime of Day to Run [{0}]", m_dateTimeOfDayToRun.ToShortTimeString());
                 m_eventWriteToLog(stringMsg, LogMessageType.MiscellaneousAlwaysDisplay);
@@ -193,6 +196,7 @@ namespace sure_copy
                             //m_eventWriteToLog(stringMsg, LogMessageType.MiscellaneousAlwaysDisplay);
                             stringMsg += string.Format("\r\n\r\t\t\tDetailedLogging [{0}]\r\n\r\t\t\tHALT_OPERATIONS [{1}]\r\n\r\t\t\tCheckMD5 [{2}]", m_boolDetailedLogging, m_boolUSER_HALT_OPERATIONS, m_boolCheckMD5);
                             stringMsg += string.Format("\r\n\r\t\t\tRunCompletedToday [{0}]\r\n\r\t\t\tAllowDestinationPathChangeViaHTTP [{1}]", m_boolRunCompletedToday, m_boolAllowDestinationPathChangeViaHTTP);
+                            stringMsg += string.Format("\r\n\r\t\t\tCopy Buffer Size [{0}mb]", m_intBufferSizeMB);                            
                             m_eventWriteToLog(stringMsg, LogMessageType.MiscellaneousAlwaysDisplay);
                             stringMsg = string.Format("\r\tTime of Day to Run [{0}]", m_dateTimeOfDayToRun.ToShortTimeString());
                             m_eventWriteToLog(stringMsg, LogMessageType.MiscellaneousAlwaysDisplay);
@@ -481,7 +485,7 @@ namespace sure_copy
 
                     if (boolPerformCopy == true)
                     {
-                        CustomFileCopier myCopier = new CustomFileCopier(stringSourceFileName, stringDestinationFileName);
+                        CustomFileCopier myCopier = new CustomFileCopier(stringSourceFileName, stringDestinationFileName, m_intBufferSizeMB);
                         myCopier.OnComplete += CopyCompleted;
                         myCopier.OnProgressChanged += CopyProgress;
                         myCopier.Copy();
@@ -628,6 +632,11 @@ namespace sure_copy
                 m_stringSourcePath = ConfigurationManager.AppSettings["SourcePath"].ToString();
 
                 string stringDestinationPath = ConfigurationManager.AppSettings["DestinationPath"].ToString();
+
+                if (ConfigurationManager.AppSettings["BufferSizeMB"] != null)
+                    if (int.TryParse(ConfigurationManager.AppSettings["BufferSizeMB"].ToString(), out m_intBufferSizeMB) == false)
+                        m_intBufferSizeMB = 1;
+
 
                 if (!stringDestinationPath.ToUpper().Contains(m_stringWindowsSystemDirectory.ToUpper()))
                     m_stringDestinationPath = stringDestinationPath;
