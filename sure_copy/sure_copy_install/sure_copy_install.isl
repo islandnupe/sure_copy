@@ -3731,7 +3731,7 @@
 	<table name="ISSwidtagProperty">
 		<col key="yes" def="s72">Name</col>
 		<col def="s0">Value</col>
-		<row><td>UniqueId</td><td>B76EFA28-961F-4A26-9F4E-460CD6E60015</td></row>
+		<row><td>UniqueId</td><td>73523B71-8182-4531-9E74-F5105319D413</td></row>
 	</table>
 
 	<table name="ISTargetImage">
@@ -4344,7 +4344,7 @@ UwBpAG4AZwBsAGUASQBtAGEAZwBlAAEARQB4AHAAcgBlAHMAcwA=
 		<row><td>PROGMSG_IIS_ROLLBACKWEBSERVICEEXTENSIONS</td><td>##IDS_PROGMSG_IIS_ROLLBACKWEBSERVICEEXTENSIONS##</td><td/></row>
 		<row><td>ProductCode</td><td>{B8B518CC-5C76-4009-974B-065594321A5F}</td><td/></row>
 		<row><td>ProductName</td><td>sure_copy</td><td/></row>
-		<row><td>ProductVersion</td><td>1.10.0000</td><td/></row>
+		<row><td>ProductVersion</td><td>1.20.0000</td><td/></row>
 		<row><td>ProgressType0</td><td>install</td><td/></row>
 		<row><td>ProgressType1</td><td>Installing</td><td/></row>
 		<row><td>ProgressType2</td><td>installed</td><td/></row>
@@ -4360,7 +4360,7 @@ UwBpAG4AZwBsAGUASQBtAGEAZwBlAAEARQB4AHAAcgBlAHMAcwA=
 		<row><td>SecureCustomProperties</td><td>ISFOUNDNEWERPRODUCTVERSION;USERNAME;COMPANYNAME;ISX_SERIALNUM;SUPPORTDIR</td><td/></row>
 		<row><td>SelectedSetupType</td><td>##IDS__DisplayName_Typical##</td><td/></row>
 		<row><td>SetupType</td><td>Typical</td><td/></row>
-		<row><td>UpgradeCode</td><td>{AEC9E96D-8FB3-48C3-AE01-4F633F5461F2}</td><td/></row>
+		<row><td>UpgradeCode</td><td>{9C25BBB3-9230-4B54-851E-7FC91DA2833C}</td><td/></row>
 		<row><td>_IsMaintenance</td><td>Change</td><td/></row>
 		<row><td>_IsSetupTypeMin</td><td>Typical</td><td/></row>
 	</table>
