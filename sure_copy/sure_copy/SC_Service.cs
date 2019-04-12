@@ -59,6 +59,7 @@ namespace sure_copy
         string m_stringElapsedTime = string.Empty;
 
         bool m_boolCheckMD5 = false;
+        bool m_boolCheckLastWriteTime = false;
 
         TimeSpan m_timeSpanDeleteLogFilesOlderThan = new TimeSpan(30,0,0,0);
         TimeSpan m_timeSpanSleepLength = new TimeSpan(0, 0, 20);
@@ -79,6 +80,7 @@ namespace sure_copy
         int m_intSuccessfulCopyAttempts = 0;
         int m_intFailedCopyAttempts = 0;
         int m_intFailedMD5Checks = 0;
+        int m_intLastWriteTimeChecks = 0;
         long m_longTotalBytesCopied = -1;
 
         int m_intBufferSizeMB = 1;
@@ -460,6 +462,27 @@ namespace sure_copy
                     else
                         boolPerformCopy = true;
 
+                    //If we need to do a LastWriteTime check
+                    if (m_boolCheckLastWriteTime == true && boolFileExists == true)
+                    {
+                        //If LastWriteTime check fails, perform copy
+                        DateTime dateTimeLastModifiedSource = File.GetLastWriteTimeUtc(stringSourceFileName);
+                        DateTime dateTimeLastModifiedDestination = File.GetLastWriteTimeUtc(stringDestinationFileName);
+
+                        bool boolLastWriteTime = dateTimeLastModifiedSource == dateTimeLastModifiedDestination;
+                        if (boolLastWriteTime == false)
+                        {
+                            m_intLastWriteTimeChecks++;
+                            boolPerformCopy = true;
+                            string stringMsg = string.Format("Last Write Times differ for [{0}] and [{1}] [{2}]-[{3}]", stringSourceFileName, stringDestinationFileName, dateTimeLastModifiedSource, dateTimeLastModifiedDestination);
+                            m_eventWriteToLog(stringMsg, LogMessageType.Error);
+                        }
+                        else
+                        {
+                            boolPerformCopy = false;
+                        }
+                    }
+
                     //If we need to do a CRC check
                     if (m_boolCheckMD5 == true && boolFileExists == true)
                     {
@@ -477,7 +500,7 @@ namespace sure_copy
                             boolPerformCopy = false;
                         }
                     }
-
+                    
                     //if file doesn't exist at destination, check if directory exists. If directory doesn't exist, create it
                     if (boolFileExists != true && boolPerformCopy == true)
                         if (Directory.Exists(m_stringDestinationPath) == false)
@@ -622,6 +645,9 @@ namespace sure_copy
 
                 if (bool.TryParse(ConfigurationManager.AppSettings["CheckMD5"].ToString(), out m_boolCheckMD5) == false)
                     m_boolCheckMD5 = true;
+
+                if (bool.TryParse(ConfigurationManager.AppSettings["CheckLastWriteTime"].ToString(), out m_boolCheckLastWriteTime) == false)
+                    m_boolCheckLastWriteTime = true;                
 
                 if (DateTime.TryParse(ConfigurationManager.AppSettings["TIME_OF_DAY_TO_RUN"].ToString(), out m_dateTimeOfDayToRun) == false)
                     m_dateTimeOfDayToRun = new DateTime(2016, 1, 1, 0, 0, 0);
@@ -902,6 +928,19 @@ namespace sure_copy
                                 m_eventWriteToLog(stringMsg, LogMessageType.MiscellaneousAlwaysDisplay);
 
                                 saveToConfigFile("CheckMD5", m_boolCheckMD5.ToString());
+                            }
+                            break;
+
+                        case "checklastwritetime":
+                            value = context.Request.QueryString[parameter];
+                            bool boolCheckLastWriteTime = m_boolCheckLastWriteTime;
+
+                            if (bool.TryParse(value, out m_boolCheckLastWriteTime) && m_boolCheckLastWriteTime != boolCheckLastWriteTime)
+                            {
+                                stringMsg = string.Format("Check Last Write time Flag changed from [{0}] to [{1}] via HTTP", boolCheckLastWriteTime, m_boolCheckLastWriteTime);
+                                m_eventWriteToLog(stringMsg, LogMessageType.MiscellaneousAlwaysDisplay);
+
+                                saveToConfigFile("CheckLastWriteTime", m_boolCheckLastWriteTime.ToString());
                             }
                             break;
 
