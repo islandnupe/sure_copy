@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Data.SqlClient;
 using System.Data.SQLite;
 using System.Linq;
 using System.Text;
@@ -24,7 +25,7 @@ namespace sure_copy
     class DataAccessLayer
     {
         string m_stringDatabaseFile = string.Empty ;
-        SQLiteConnection m_dbConnection;
+        string ConnectionString = string.Empty ;
         public event DelegateWriteToLog m_eventWriteToLog;
 
         public DataAccessLayer(string DatabaseFile = "default_db.sqlite")
@@ -43,50 +44,53 @@ namespace sure_copy
             {
                 string parameters_clause = string.Empty;
                 string values_clause = string.Empty;
-
-                SQLiteCommand command = new SQLiteCommand(m_dbConnection);
-
-                parameters_clause = "(SourcePath";
-                values_clause = "(@SourcePath";
-                command.Parameters.Add(new SQLiteParameter("@SourcePath", SourcePath));
-
-                if (!string.IsNullOrEmpty(DestinationPath))
+                
+                using (SQLiteConnection dbConnection = new SQLiteConnection(ConnectionString))
                 {
-                    parameters_clause += ", DestinationPath";
-                    values_clause += ", @DestinationPath";
-                    command.Parameters.Add(new SQLiteParameter("@DestinationPath", DestinationPath));
-                }
-                if (!string.IsNullOrEmpty(DateFound))
-                {
-                    parameters_clause += ", DateFound";
-                    values_clause += ", @DateFound";
-                    command.Parameters.Add(new SQLiteParameter("@DateFound", DateFound));
-                }
-                if (!string.IsNullOrEmpty(MD5))
-                {
-                    parameters_clause += ", MD5";
-                    values_clause += ", @MD5";
-                    command.Parameters.Add(new SQLiteParameter("@MD5", MD5));
-                }
-                if (!string.IsNullOrEmpty(DateCopyStarted))
-                {
-                    parameters_clause += ", DateCopyStarted";
-                    values_clause += ", @DateCopyStarted";
-                    command.Parameters.Add(new SQLiteParameter("@DateCopyStarted", DateCopyStarted));
-                }
-                if (!string.IsNullOrEmpty(DateCopyCompleted))
-                {
-                    parameters_clause += ", DateCopyCompleted";
-                    values_clause += ", @DateCopyCompleted";
-                    command.Parameters.Add(new SQLiteParameter("@DateCopyCompleted", DateCopyCompleted));
-                }
-                parameters_clause = ")";
-                values_clause = ")";
+                    dbConnection.Open();
+                    SQLiteCommand command = new SQLiteCommand(dbConnection);
 
-                string sql = string.Format(@"insert into FilesFound {0} values {1}", parameters_clause, values_clause);
-                command.CommandText = sql;
-                command.ExecuteNonQuery();
+                    parameters_clause = "(SourcePath";
+                    values_clause = "(@SourcePath";
+                    command.Parameters.Add(new SQLiteParameter("@SourcePath", SourcePath));
 
+                    if (!string.IsNullOrEmpty(DestinationPath))
+                    {
+                        parameters_clause += ", DestinationPath";
+                        values_clause += ", @DestinationPath";
+                        command.Parameters.Add(new SQLiteParameter("@DestinationPath", DestinationPath));
+                    }
+                    if (!string.IsNullOrEmpty(DateFound))
+                    {
+                        parameters_clause += ", DateFound";
+                        values_clause += ", @DateFound";
+                        command.Parameters.Add(new SQLiteParameter("@DateFound", DateFound));
+                    }
+                    if (!string.IsNullOrEmpty(MD5))
+                    {
+                        parameters_clause += ", MD5";
+                        values_clause += ", @MD5";
+                        command.Parameters.Add(new SQLiteParameter("@MD5", MD5));
+                    }
+                    if (!string.IsNullOrEmpty(DateCopyStarted))
+                    {
+                        parameters_clause += ", DateCopyStarted";
+                        values_clause += ", @DateCopyStarted";
+                        command.Parameters.Add(new SQLiteParameter("@DateCopyStarted", DateCopyStarted));
+                    }
+                    if (!string.IsNullOrEmpty(DateCopyCompleted))
+                    {
+                        parameters_clause += ", DateCopyCompleted";
+                        values_clause += ", @DateCopyCompleted";
+                        command.Parameters.Add(new SQLiteParameter("@DateCopyCompleted", DateCopyCompleted));
+                    }
+                    parameters_clause += ")";
+                    values_clause += ")";
+
+                    string sql = string.Format(@"insert into FilesFound {0} values {1}", parameters_clause, values_clause);
+                    command.CommandText = sql;
+                    command.ExecuteNonQuery();
+                }
             }
             catch (SQLiteException Ex)
             {
@@ -103,14 +107,63 @@ namespace sure_copy
         public void Update(int ID, string SourcePath="", string DestinationPath = "", string DateFound = "",
                             string MD5 = "", string DateCopyStarted = "", string DateCopyCompleted = "")
         {
+            if (ID == 0)
+                throw new DataAccessLayerException("ID Must not be non Zero");
+
             try
             {
+                string parameters_clause = string.Empty;
 
+                using (SQLiteConnection dbConnection = new SQLiteConnection(ConnectionString))
+                {
+                    dbConnection.Open();
+                    SQLiteCommand command = new SQLiteCommand(dbConnection);
+                    parameters_clause = string.Empty;
+
+                    if (!string.IsNullOrEmpty(SourcePath))
+                    {
+                        parameters_clause += "SourcePath = @SourcePath";
+                        command.Parameters.Add(new SQLiteParameter("@SourcePath", SourcePath));
+                    }
+
+                    if (!string.IsNullOrEmpty(DestinationPath))
+                    {
+                        parameters_clause += "DestinationPath = @DestinationPath";
+                        command.Parameters.Add(new SQLiteParameter("@DestinationPath", DestinationPath));
+                    }
+                    if (!string.IsNullOrEmpty(DateFound))
+                    {
+                        parameters_clause += "DateFound = @DateFound";
+                        command.Parameters.Add(new SQLiteParameter("@DateFound", DateFound));
+                    }
+                    if (!string.IsNullOrEmpty(MD5))
+                    {
+                        parameters_clause += "MD5 = @MD5";
+                        command.Parameters.Add(new SQLiteParameter("@MD5", MD5));
+                    }
+                    if (!string.IsNullOrEmpty(DateCopyStarted))
+                    {
+                        parameters_clause += "DateCopyStarted = @DateCopyStarted";
+                        command.Parameters.Add(new SQLiteParameter("@DateCopyStarted", DateCopyStarted));
+                    }
+                    if (!string.IsNullOrEmpty(DateCopyCompleted))
+                    {
+                        parameters_clause += "DateCopyCompleted = @DateCopyCompleted";
+                        command.Parameters.Add(new SQLiteParameter("@DateCopyCompleted", DateCopyCompleted));
+                    }
+
+                    string sql = string.Format(@"UPDATE FilesFound SET {0} where ID=@ID", parameters_clause);
+                    command.Parameters.Add(new SQLiteParameter("@ID", ID));
+
+                    command.CommandText = sql;
+                    command.ExecuteNonQuery();
+                }
             }
-            catch (Exception Ex)
+            catch (SQLiteException Ex)
             {
-
+                throw new DataAccessLayerException(Ex.Message);
             }
+
             finally
             {
             }
@@ -118,34 +171,65 @@ namespace sure_copy
 
         public void Delete(int ID)
         {
+            if (ID == 0)
+                throw new DataAccessLayerException("ID Must not be non Zero");
+
             try
             {
+                using (SQLiteConnection dbConnection = new SQLiteConnection(ConnectionString))
+                {
+                    dbConnection.Open();
+                    SQLiteCommand command = new SQLiteCommand(dbConnection);
 
+                    string sql = string.Format(@"DELETE FilesFound where ID=@ID", parameters_clause);
+                    command.Parameters.Add(new SQLiteParameter("@ID", ID));
+
+                    command.CommandText = sql;
+                    command.ExecuteNonQuery();
+                }
             }
             catch (Exception Ex)
             {
-
+                throw new DataAccessLayerException(Ex.Message);
             }
             finally
             {
             }
         }
 
-        public DataRow Get(int ID)
+        public DataTable Get(string SourcePath)
         {
-            DataRow data_row = null ;
+            if (string.IsNullOrEmpty(SourcePath))
+                throw new DataAccessLayerException("SourcePath Must not be NULL or empty");
+
+            DataTable data_table = null;
+
             try
             {
+                //SQLiteCommand command = new SQLiteCommand(m_dbConnection);
+                //parameters_clause = string.Empty;
 
+                using (SQLiteConnection dbConnection = new SQLiteConnection(ConnectionString))
+                {
+                    dbConnection.Open();
+                    string sql = string.Format(@"SELECT * FROM FilesFound where SourcePath=@SourcePath");
+                    using (SqlDataAdapter sqlDataAdapter = new SqlDataAdapter(
+                        sql, dbConnection))
+                    {
+                        // Use DataAdapter to fill DataTable
+                        data_table = new DataTable();
+                        sqlDataAdapter.Fill(data_table);
+                    }
+                }
             }
             catch (Exception Ex)
             {
-
+                throw new DataAccessLayerException(Ex.Message);
             }
             finally
             {
             }
-            return data_row;
+            return data_table;
         }
 
         private void SetupDatabase()
@@ -155,10 +239,10 @@ namespace sure_copy
             {
                 if (!System.IO.File.Exists(m_stringDatabaseFile))
                     SQLiteConnection.CreateFile(m_stringDatabaseFile);
-                string ConnectionString = string.Format("Data Source={0};Version=3;Pooling=True;Max Pool Size=20;", m_stringDatabaseFile);
-                using (m_dbConnection = new SQLiteConnection(ConnectionString))
+                ConnectionString = string.Format("Data Source={0};Version=3;Pooling=True;Max Pool Size=20;", m_stringDatabaseFile);
+                using (SQLiteConnection dbConnection = new SQLiteConnection(ConnectionString))
                 {
-                    m_dbConnection.Open();
+                    dbConnection.Open();
                     string sql = @"CREATE TABLE IF NOT EXISTS
                                     FilesFound 
                                     (
@@ -171,7 +255,7 @@ namespace sure_copy
                                     DateCopyStarted   DATETIME,
                                     DateCopyCompleted DATETIME
                                     )";
-                    SQLiteCommand command = new SQLiteCommand(sql, m_dbConnection);
+                    SQLiteCommand command = new SQLiteCommand(sql, dbConnection);
                     command.ExecuteNonQuery();
                     /*
                     sql = "insert into FilesFound (SourcePath, DestinationPath) values ('you', 'you too')";
@@ -197,6 +281,7 @@ namespace sure_copy
                     string stringMsgEx = string.Format("An Exception Fired. {0}", Ex.ToString());
                     m_eventWriteToLog(stringMsgEx, LogMessageType.ErrorAlwaysDisplay);
                 }
+                throw new DataAccessLayerException(Ex.Message);
             }
         }
 
