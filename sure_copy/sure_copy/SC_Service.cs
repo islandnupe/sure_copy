@@ -16,6 +16,7 @@ using System.IO;
 using System.Security.Cryptography;
 using System.Text.RegularExpressions;
 using System.Management;
+using System.Data.SQLite;
 
 namespace sure_copy
 {
@@ -50,6 +51,8 @@ namespace sure_copy
 
         string m_stringSourcePath = string.Empty;
         string m_stringDestinationPath = string.Empty;
+
+        string m_stringDatabaseFile = string.Empty;
 
         string m_stringSourcePathChangingTo = string.Empty;
         string m_stringDestinationPathChangingTo = string.Empty;
@@ -87,6 +90,8 @@ namespace sure_copy
         int m_intHttpPort = 8181;
         int m_intHttpPortChangeTo = 8181;
         public event DelegateWriteToLog m_eventWriteToLog;
+
+        SQLiteConnection m_dbConnection;
 
         object lockObject = new object();
 
@@ -139,7 +144,7 @@ namespace sure_copy
                 m_stringWindowsSystemDirectory =  Environment.GetFolderPath(Environment.SpecialFolder.Windows);
                 LoadConfigurationSettings();
                 SetupDelegates();
-
+                
                 Assembly asm = Assembly.GetExecutingAssembly();
                 string stringVersion = asm.GetName().Version.ToString();
                 AssemblyTitleAttribute TitleAttribute = (AssemblyTitleAttribute)Attribute.GetCustomAttribute(asm, typeof(AssemblyTitleAttribute));
@@ -179,7 +184,9 @@ namespace sure_copy
                 ReportDestinationDriveSpace();
 
                 m_dateToday = DateTime.Now;
-                
+
+                SetupDatabase();
+ 
                 while (m_boolServiceRunning)
                 {
                     try
@@ -207,7 +214,7 @@ namespace sure_copy
 
                         if (m_boolUSER_HALT_OPERATIONS != true)
                         {
-                            if (Math.Abs((m_dateTimeOfDayToRun.TimeOfDay - DateTime.Now.TimeOfDay).TotalMinutes) < 2 && (DateTime.Now.TimeOfDay > m_dateTimeOfDayToRun.TimeOfDay) && m_boolRunCompletedToday == false)
+                            //if (Math.Abs((m_dateTimeOfDayToRun.TimeOfDay - DateTime.Now.TimeOfDay).TotalMinutes) < 2 && (DateTime.Now.TimeOfDay > m_dateTimeOfDayToRun.TimeOfDay) && m_boolRunCompletedToday == false)
                             {
                                 m_intTotalCopyAttempts = 0;
                                 m_intSuccessfulCopyAttempts = 0;
@@ -242,6 +249,7 @@ namespace sure_copy
                                     m_eventWriteToLog(stringMsg, LogMessageType.MiscellaneousAlwaysDisplay);
                                 }
                             }
+                            System.Environment.Exit(0);
                         }
                     }
                     catch (Exception Ex)
@@ -263,6 +271,56 @@ namespace sure_copy
                 m_eventWriteToLog(stringMsgEx, LogMessageType.ErrorAlwaysDisplay);
             }
         }
+
+        private void SetupDatabase()
+        {
+            string stringMsg = string.Empty;
+            try
+            {
+                if (!System.IO.File.Exists(m_stringDatabaseFile))
+                    SQLiteConnection.CreateFile(m_stringDatabaseFile);
+                string ConnectionString = string.Format("Data Source={0};Version=3;Pooling=True;Max Pool Size=20;", m_stringDatabaseFile);
+                using (m_dbConnection = new SQLiteConnection(ConnectionString))
+                {
+                    m_dbConnection.Open();
+                    string sql = @"CREATE TABLE IF NOT EXISTS
+                                    FilesFound 
+                                    (
+                                    ID                INTEGER PRIMARY KEY UNIQUE,
+                                    SourcePath        VARCHAR (4096) NOT NULL ,
+                                    DestinationPath   VARCHAR (4096) ,
+                                    DateFound         DATETIME,
+                                    TimesModified     INT            DEFAULT (0),
+                                    MD5               VARCHAR (512),
+                                    DateCopyStarted   DATETIME,
+                                    DateCopyCompleted DATETIME
+                                    )";
+                    SQLiteCommand command = new SQLiteCommand(sql, m_dbConnection);
+                    command.ExecuteNonQuery();
+                    /*
+                    sql = "insert into FilesFound (SourcePath, DestinationPath) values ('you', 'you too')";
+                    command = new SQLiteCommand(sql, m_dbConnection);
+                    command.ExecuteNonQuery();
+
+                    sql = "select * from FilesFound order by ID desc";
+                    command = new SQLiteCommand(sql, m_dbConnection);
+                    SQLiteDataReader reader = command.ExecuteReader();
+                    while (reader.Read())
+                    {
+                        //stringMsg = "SourcePath: " + reader["SourcePath"] + "\tDestinationPath: " + reader["DestinationPath"];
+                        stringMsg = string.Format("ID[{0}] --> SourcePath:[{1}] \tDestinationPath:[{2}]", reader["ID"], reader["SourcePath"], reader["DestinationPath"]);
+                        m_eventWriteToLog(stringMsg, LogMessageType.MiscellaneousAlwaysDisplay);
+                    }
+                     */ 
+                }
+            }
+            catch (Exception Ex)
+            {
+                string stringMsgEx = string.Format("An Exception Fired. {0}", Ex.ToString());
+                m_eventWriteToLog(stringMsgEx, LogMessageType.ErrorAlwaysDisplay);
+            }
+        }
+
 
         private void DoWork()
         {            
@@ -528,7 +586,21 @@ namespace sure_copy
 
                 return stringMD5SourceFileName == stringMD5DestinationFileName;
             }
-        }        
+        }
+
+        private int GetDirectories(string myBaseDirectory)
+        {
+            DirectoryInfo dirInfo = new DirectoryInfo(myBaseDirectory);
+            return dirInfo.EnumerateDirectories()
+                       .AsParallel()
+                       .SelectMany(di => di.EnumerateFiles("*.*", SearchOption.AllDirectories))
+                       .Count();
+        }
+
+        private void CopyDirectories2(string stringSourcePath, string stringDestinationPath)
+        {
+
+        }
 
         private void CopyDirectories(string stringSourcePath, string stringDestinationPath)
         {
@@ -646,6 +718,11 @@ namespace sure_copy
                     if (m_eventWriteToLog == null) 
                         m_eventWriteToLog(stringMsg, LogMessageType.MiscellaneousAlwaysDisplay);
                 }
+
+                if (ConfigurationManager.AppSettings["DatabaseFile"] != null)
+                    m_stringDatabaseFile = ConfigurationManager.AppSettings["DatabaseFile"].ToString();
+                else
+                    m_stringDatabaseFile = "MyDatabase.sqlite";
             }
             catch (Exception Ex)
             {
