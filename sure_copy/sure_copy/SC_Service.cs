@@ -94,7 +94,7 @@ namespace sure_copy
         public event DelegateWriteToLog m_eventWriteToLog;
 
         SQLiteConnection m_dbConnection;
-
+        DataAccessLayer m_db;
         object lockObject = new object();
 
         #endregion
@@ -187,8 +187,8 @@ namespace sure_copy
 
                 m_dateToday = DateTime.Now;
 
-                SetupDatabase();
- 
+                m_db = new DataAccessLayer(m_stringDatabaseFile);
+
                 while (m_boolServiceRunning)
                 {
                     try
@@ -495,8 +495,121 @@ namespace sure_copy
             }
         }
 
+        private void CopyFileNew(string stringSourceFileName, string stringDestinationPath)
+        {
+            try
+            {
+                m_intTotalCopyAttempts++;
+
+                m_stringCurrentFileBeingCopied = stringSourceFileName;
+                //Ignore directories
+                FileAttributes attr = File.GetAttributes(stringSourceFileName);
+                if ((attr & FileAttributes.Directory) != FileAttributes.Directory)
+                {
+                    string stringDestinationFileName = string.Format(@"{0}\{1}", stringDestinationPath, Path.GetFileName(stringSourceFileName));
+
+                    bool boolPerformCopy = false;
+                    bool boolFileExists = false;
+
+                    //If file exists at destination, don't copy it..unless we need to do an MD5 
+                    if (File.Exists(stringDestinationFileName))
+                    {
+                        boolPerformCopy = false;
+                        boolFileExists = true;
+                    }
+                    else
+                        boolPerformCopy = true;
+
+                    //If we need to do a LastWriteTime check
+                    if (m_boolCheckLastWriteTime == true && boolFileExists == true)
+                    {
+                        //If LastWriteTime check fails, perform copy
+                        DateTime dateTimeLastModifiedSource = File.GetLastWriteTimeUtc(stringSourceFileName);
+                        DateTime dateTimeLastModifiedDestination = File.GetLastWriteTimeUtc(stringDestinationFileName);
+
+                        bool boolLastWriteTime = dateTimeLastModifiedSource == dateTimeLastModifiedDestination;
+                        if (boolLastWriteTime == false)
+                        {
+                            m_intLastWriteTimeChecks++;
+                            boolPerformCopy = true;
+                            string stringMsg = string.Format("Last Write Times differ for [{0}] and [{1}] [{2}]-[{3}]", stringSourceFileName, stringDestinationFileName, dateTimeLastModifiedSource, dateTimeLastModifiedDestination);
+                            m_eventWriteToLog(stringMsg, LogMessageType.Error);
+                        }
+                        else
+                        {
+                            boolPerformCopy = false;
+                        }
+                    }
+
+                    //If we need to do a CRC check
+                    if (m_boolCheckMD5 == true && boolFileExists == true)
+                    {
+                        //If MD5 check fails, perform copy
+                        bool boolMD5Passed = CheckMD5(stringSourceFileName, stringDestinationFileName);
+                        if (boolMD5Passed == false)
+                        {
+                            m_intFailedMD5Checks++;
+                            boolPerformCopy = true;
+                            string stringMsg = string.Format("MD5 Check failed for [{0}] and [{1}]", stringSourceFileName, stringDestinationFileName);
+                            m_eventWriteToLog(stringMsg, LogMessageType.Error);
+                        }
+                        else
+                        {
+                            boolPerformCopy = false;
+                        }
+                    }
+
+                    //if file doesn't exist at destination, check if directory exists. If directory doesn't exist, create it
+                    if (boolFileExists != true && boolPerformCopy == true)
+                        if (Directory.Exists(m_stringDestinationPath) == false)
+                            Directory.CreateDirectory(m_stringDestinationPath);
+
+                    if (boolPerformCopy == true)
+                    {
+                        CustomFileCopier myCopier = new CustomFileCopier(stringSourceFileName, stringDestinationFileName, m_intBufferSizeMB);
+                        myCopier.OnComplete += CopyCompleted;
+                        myCopier.OnProgressChanged += CopyProgress;
+                        myCopier.Copy();
+
+                        m_intSuccessfulCopyAttempts++;
+                    }
+                    else
+                    {
+                        m_intTotalCopyOpertionsNotNeeded++;
+                    }
+
+                }
+            }
+            catch (Exception Ex)
+            {
+                m_intFailedCopyAttempts++;
+                string stringMsg = string.Format("An Exception Fired while copying {0} to {1}. {2}", stringSourceFileName, stringDestinationPath, Ex.ToString());
+                m_eventWriteToLog(stringMsg, LogMessageType.ErrorAlwaysDisplay);
+            }
+            finally
+            {
+                m_stringCurrentFileBeingCopied = string.Empty;
+            }
+        }
+
+
         private void CopyFile(string stringSourceFileName, string stringDestinationPath)
         {
+            /*
+            try
+            {
+                m_stringCurrentFileBeingCopied = stringSourceFileName;
+                m_db.Add(stringSourceFileName) ;
+
+            }
+            catch (Exception Ex)
+            {
+                m_intFailedCopyAttempts++;
+                string stringMsg = string.Format("An Exception Fired while copying {0} to {1}. {2}", stringSourceFileName, stringDestinationPath, Ex.ToString());
+                m_eventWriteToLog(stringMsg, LogMessageType.ErrorAlwaysDisplay);
+            }
+            return;
+            */
             try
             {
                 m_intTotalCopyAttempts++;
