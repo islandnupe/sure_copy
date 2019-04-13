@@ -511,51 +511,71 @@ namespace sure_copy
                     bool boolPerformCopy = false;
                     bool boolFileExists = false;
 
-                    //If file exists at destination, don't copy it..unless we need to do an MD5 
-                    if (File.Exists(stringDestinationFileName))
+                    //get file details from database
+                    DataSet ds = m_db.Get(stringSourceFileName);
+
+                    //If file found
+                    if (ds.Tables[0].Rows.Count != 0)
                     {
-                        boolPerformCopy = false;
-                        boolFileExists = true;
+                        //compare md5 to the last time we found it
+                        DataRow dr = ds.Tables[0].Rows[0];
+
+                        string lastMD5 = dr["SourceMD5"].ToString();
+                        string currentMD5 = GetMD5(stringSourceFileName);
+                        if (lastMD5 != currentMD5)
+                            boolPerformCopy = true;
                     }
                     else
-                        boolPerformCopy = true;
-
-                    //If we need to do a LastWriteTime check
-                    if (m_boolCheckLastWriteTime == true && boolFileExists == true)
                     {
-                        //If LastWriteTime check fails, perform copy
-                        DateTime dateTimeLastModifiedSource = File.GetLastWriteTimeUtc(stringSourceFileName);
-                        DateTime dateTimeLastModifiedDestination = File.GetLastWriteTimeUtc(stringDestinationFileName);
-
-                        bool boolLastWriteTime = dateTimeLastModifiedSource == dateTimeLastModifiedDestination;
-                        if (boolLastWriteTime == false)
-                        {
-                            m_intLastWriteTimeChecks++;
-                            boolPerformCopy = true;
-                            string stringMsg = string.Format("Last Write Times differ for [{0}] and [{1}] [{2}]-[{3}]", stringSourceFileName, stringDestinationFileName, dateTimeLastModifiedSource, dateTimeLastModifiedDestination);
-                            m_eventWriteToLog(stringMsg, LogMessageType.Error);
-                        }
-                        else
+                        //If file exists at destination, don't copy it..unless we need to do an MD5 
+                        if (File.Exists(stringDestinationFileName))
                         {
                             boolPerformCopy = false;
+                            boolFileExists = true;
                         }
+                        else
+                            boolPerformCopy = true;
                     }
 
-                    //If we need to do a CRC check
-                    if (m_boolCheckMD5 == true && boolFileExists == true)
+                    if(false)
                     {
-                        //If MD5 check fails, perform copy
-                        bool boolMD5Passed = CheckMD5(stringSourceFileName, stringDestinationFileName);
-                        if (boolMD5Passed == false)
+                        //If we need to do a LastWriteTime check
+                        if (m_boolCheckLastWriteTime == true && boolFileExists == true)
                         {
-                            m_intFailedMD5Checks++;
-                            boolPerformCopy = true;
-                            string stringMsg = string.Format("MD5 Check failed for [{0}] and [{1}]", stringSourceFileName, stringDestinationFileName);
-                            m_eventWriteToLog(stringMsg, LogMessageType.Error);
+                            //If LastWriteTime check fails, perform copy
+                            DateTime dateTimeLastModifiedSource = File.GetLastWriteTimeUtc(stringSourceFileName);
+                            DateTime dateTimeLastModifiedDestination = File.GetLastWriteTimeUtc(stringDestinationFileName);
+
+                            bool boolLastWriteTime = dateTimeLastModifiedSource == dateTimeLastModifiedDestination;
+                            if (boolLastWriteTime == false)
+                            {
+                                m_intLastWriteTimeChecks++;
+                                boolPerformCopy = true;
+                                string stringMsg = string.Format("Last Write Times differ for [{0}] and [{1}] [{2}]-[{3}]", stringSourceFileName, stringDestinationFileName, dateTimeLastModifiedSource, dateTimeLastModifiedDestination);
+                                m_eventWriteToLog(stringMsg, LogMessageType.Error);
+                            }
+                            else
+                            {
+                                boolPerformCopy = false;
+                            }
                         }
-                        else
+
+                        //If we need to do a CRC check
+                        if (m_boolCheckMD5 == true && boolFileExists == true)
                         {
-                            boolPerformCopy = false;
+                            //If MD5 check fails, perform copy
+                            bool boolMD5Passed = CheckMD5(stringSourceFileName, stringDestinationFileName);
+                            if (boolMD5Passed == false)
+                            {
+                                m_intFailedMD5Checks++;
+                                boolPerformCopy = true;
+                                string stringMsg = string.Format("MD5 Check failed for [{0}] and [{1}]", stringSourceFileName, stringDestinationFileName);
+                                m_eventWriteToLog(stringMsg, LogMessageType.Error);
+                            }
+                            else
+                            {
+                                boolPerformCopy = false;
+                            }
                         }
                     }
 
@@ -722,6 +742,21 @@ namespace sure_copy
 
                 return stringMD5SourceFileName == stringMD5DestinationFileName;
             }
+        }
+
+        private string GetMD5(string stringSourceFileName)
+        {
+            string stringMD5SourceFileName = string.Empty;
+
+            using (var md5 = MD5.Create())
+            {
+                using (var stream = File.OpenRead(stringSourceFileName))
+                {
+                    stringMD5SourceFileName = Encoding.Default.GetString(md5.ComputeHash(stream));
+                }
+            }
+            return stringMD5SourceFileName ;
+
         }
 
         private int GetDirectories(string myBaseDirectory)
