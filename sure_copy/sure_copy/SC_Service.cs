@@ -508,23 +508,30 @@ namespace sure_copy
                 {
                     string stringDestinationFileName = string.Format(@"{0}\{1}", stringDestinationPath, Path.GetFileName(stringSourceFileName));
 
+                    string sourceMD5 = string.Empty;
+                    string destinationMD5 = string.Empty;
                     bool boolPerformCopy = false;
-                    bool boolFileExists = false;
-
+                    bool boolDestinationFileExists = false;
+                    /*
                     //get file details from database
                     DataSet ds = m_db.Get(stringSourceFileName);
 
-                    //If file found
+                    //If file found in db
                     if (ds.Tables[0].Rows.Count != 0)
                     {
                         //compare md5 to the last time we found it
                         DataRow dr = ds.Tables[0].Rows[0];
 
-                        string lastMD5 = dr["SourceMD5"].ToString();
-                        string currentMD5 = GetMD5(stringSourceFileName);
-                        if (lastMD5 != currentMD5)
+                        string lastSourceMD5 = dr["SourceMD5"].ToString();
+                        sourceMD5 = GetMD5(stringSourceFileName);
+
+                        if (lastSourceMD5 != sourceMD5)
                             boolPerformCopy = true;
+
+                        m_db.Add(stringSourceFileName, stringDestinationFileName, sourceMD5, destinationMD5);
+
                     }
+                    //file not found in db
                     else
                     {
                         //If file exists at destination, don't copy it..unless we need to do an MD5 
@@ -536,11 +543,20 @@ namespace sure_copy
                         else
                             boolPerformCopy = true;
                     }
+                    */
+                    //If file exists at destination, don't copy it..unless we need to do an MD5 
+                    if (File.Exists(stringDestinationFileName))
+                    {
+                        boolPerformCopy = false;
+                        boolDestinationFileExists = true;
+                    }
+                    else
+                        boolPerformCopy = true;
 
-                    if(false)
+                    if(true)
                     {
                         //If we need to do a LastWriteTime check
-                        if (m_boolCheckLastWriteTime == true && boolFileExists == true)
+                        if (m_boolCheckLastWriteTime == true && boolDestinationFileExists == true)
                         {
                             //If LastWriteTime check fails, perform copy
                             DateTime dateTimeLastModifiedSource = File.GetLastWriteTimeUtc(stringSourceFileName);
@@ -561,10 +577,13 @@ namespace sure_copy
                         }
 
                         //If we need to do a CRC check
-                        if (m_boolCheckMD5 == true && boolFileExists == true)
+                        if (m_boolCheckMD5 == true && boolDestinationFileExists == true)
                         {
                             //If MD5 check fails, perform copy
-                            bool boolMD5Passed = CheckMD5(stringSourceFileName, stringDestinationFileName);
+                            sourceMD5 = GetMD5(stringSourceFileName);
+                            destinationMD5 = GetMD5(stringDestinationFileName);
+
+                            bool boolMD5Passed = sourceMD5 == destinationMD5;
                             if (boolMD5Passed == false)
                             {
                                 m_intFailedMD5Checks++;
@@ -580,7 +599,7 @@ namespace sure_copy
                     }
 
                     //if file doesn't exist at destination, check if directory exists. If directory doesn't exist, create it
-                    if (boolFileExists != true && boolPerformCopy == true)
+                    if (boolDestinationFileExists != true && boolPerformCopy == true)
                         if (Directory.Exists(m_stringDestinationPath) == false)
                             Directory.CreateDirectory(m_stringDestinationPath);
 
@@ -589,13 +608,25 @@ namespace sure_copy
                         CustomFileCopier myCopier = new CustomFileCopier(stringSourceFileName, stringDestinationFileName, m_intBufferSizeMB);
                         myCopier.OnComplete += CopyCompleted;
                         myCopier.OnProgressChanged += CopyProgress;
+                        DateTime DateCopyStarted = DateTime.Now;
                         myCopier.Copy();
+                        DateTime DateCopyCompleted = DateTime.Now;
 
                         m_intSuccessfulCopyAttempts++;
+
+                        File.GetLastWriteTimeUtc(stringSourceFileName);
+
+                        m_db.Upsert(stringSourceFileName, sourceMD5, stringDestinationFileName, destinationMD5,
+                             File.GetLastWriteTimeUtc(stringSourceFileName).ToString(), File.GetCreationTimeUtc(stringSourceFileName).ToString(),
+                             DateCopyStarted.ToString(), DateCopyCompleted.ToString());
                     }
                     else
                     {
                         m_intTotalCopyOpertionsNotNeeded++;
+
+                        m_db.Add(stringSourceFileName, sourceMD5, stringDestinationFileName, destinationMD5,
+                            File.GetLastWriteTimeUtc(stringSourceFileName).ToString(), File.GetCreationTimeUtc(stringSourceFileName).ToString(), "", "");
+
                     }
 
                 }
@@ -780,7 +811,8 @@ namespace sure_copy
             {
                 try
                 {
-                    CopyFile(stringSourceFileFullPath, stringDestinationPath);
+                    CopyFileNew(stringSourceFileFullPath, stringDestinationPath);
+
                     if (m_boolUSER_HALT_OPERATIONS == true)
                     {
                         string stringMsg = string.Format("Halting Operations...");

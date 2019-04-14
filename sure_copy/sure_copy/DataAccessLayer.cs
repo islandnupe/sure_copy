@@ -34,8 +34,8 @@ namespace sure_copy
             SetupDatabase();
         }
 
-        public int Add(string SourcePath, string DestinationPath = "", string DateFound = "",
-                            string MD5 = "", string DateModified = "", string DateCreated = "",
+        public int Add(string SourcePath, string SourceMD5 = "", string DestinationPath = "",
+                            string DestinationMD5 = "", string DateModified = "", string DateCreated = "",
                             string DateCopyStarted = "", string DateCopyCompleted = "")
         {
             if(string.IsNullOrEmpty(SourcePath))
@@ -52,9 +52,11 @@ namespace sure_copy
                     dbConnection.Open();
                     SQLiteCommand command = new SQLiteCommand(dbConnection);
 
-                    parameters_clause = "(SourcePath";
-                    values_clause = "(@SourcePath";
+                    parameters_clause = "(SourcePath, DateFound";
+                    values_clause = "(@SourcePath, @DateFound";
                     command.Parameters.Add(new SQLiteParameter("@SourcePath", SourcePath));
+
+                    command.Parameters.Add(new SQLiteParameter("@DateFound", DateTime.Now));
 
                     if (!string.IsNullOrEmpty(DestinationPath))
                     {
@@ -62,17 +64,16 @@ namespace sure_copy
                         values_clause += ", @DestinationPath";
                         command.Parameters.Add(new SQLiteParameter("@DestinationPath", DestinationPath));
                     }
-                    if (!string.IsNullOrEmpty(DateFound))
+                    if (!string.IsNullOrEmpty(SourceMD5))
                     {
-                        parameters_clause += ", DateFound";
-                        values_clause += ", @DateFound";
-                        command.Parameters.Add(new SQLiteParameter("@DateFound", DateFound));
-                    }
-                    if (!string.IsNullOrEmpty(MD5))
+                        parameters_clause += ", SourceMD5";
+                        values_clause += ", @SourceMD5";
+                        command.Parameters.Add(new SQLiteParameter("@SourceMD5", SourceMD5));
+                    } if (!string.IsNullOrEmpty(DestinationMD5))
                     {
-                        parameters_clause += ", MD5";
-                        values_clause += ", @MD5";
-                        command.Parameters.Add(new SQLiteParameter("@MD5", MD5));
+                        parameters_clause += ", DestinationMD5";
+                        values_clause += ", @DestinationMD5";
+                        command.Parameters.Add(new SQLiteParameter("@DestinationMD5", DestinationMD5));
                     }
                     if (!string.IsNullOrEmpty(DateModified))
                     {
@@ -118,8 +119,8 @@ namespace sure_copy
             return ID;
         }
 
-        public void Update(int ID, string SourcePath="", string DestinationPath = "", string DateFound = "",
-                            string MD5 = "", string DateModified = "", string DateCreated = "",
+        public void Update(int ID, string SourcePath, string SourceMD5 = "", string DestinationPath = "",
+                            string DestinationMD5 = "", string DateModified = "", string DateCreated = "",
                             string DateCopyStarted = "", string DateCopyCompleted = "")
         {
             if (ID == 0)
@@ -140,22 +141,22 @@ namespace sure_copy
                         parameters_clause += "SourcePath = @SourcePath";
                         command.Parameters.Add(new SQLiteParameter("@SourcePath", SourcePath));
                     }
-
+                    if (!string.IsNullOrEmpty(SourceMD5))
+                    {
+                        parameters_clause += "SourceMD5 = @SourceMD5";
+                        command.Parameters.Add(new SQLiteParameter("@SourceMD5", SourceMD5));
+                    }
                     if (!string.IsNullOrEmpty(DestinationPath))
                     {
                         parameters_clause += "DestinationPath = @DestinationPath";
                         command.Parameters.Add(new SQLiteParameter("@DestinationPath", DestinationPath));
                     }
-                    if (!string.IsNullOrEmpty(DateFound))
+                    if (!string.IsNullOrEmpty(DestinationMD5))
                     {
-                        parameters_clause += "DateFound = @DateFound";
-                        command.Parameters.Add(new SQLiteParameter("@DateFound", DateFound));
+                        parameters_clause += "DestinationMD5 = @DestinationMD5";
+                        command.Parameters.Add(new SQLiteParameter("@DestinationMD5", DestinationMD5));
                     }
-                    if (!string.IsNullOrEmpty(MD5))
-                    {
-                        parameters_clause += "MD5 = @MD5";
-                        command.Parameters.Add(new SQLiteParameter("@MD5", MD5));
-                    }
+
                     if (!string.IsNullOrEmpty(DateModified))
                     {
                         parameters_clause += "DateModified = @DateModified";
@@ -179,6 +180,96 @@ namespace sure_copy
 
                     string sql = string.Format(@"UPDATE FilesFound SET {0} where ID=@ID", parameters_clause);
                     command.Parameters.Add(new SQLiteParameter("@ID", ID));
+
+                    command.CommandText = sql;
+                    command.ExecuteNonQuery();
+                }
+            }
+            catch (SQLiteException Ex)
+            {
+                throw new DataAccessLayerException(Ex.Message);
+            }
+
+            finally
+            {
+            }
+        }
+
+
+        public void Upsert(string SourcePath, string SourceMD5 = "", string DestinationPath = "",
+                            string DestinationMD5 = "", string DateModified = "", string DateCreated = "",
+                            string DateCopyStarted = "", string DateCopyCompleted = "")
+        {
+            if (string.IsNullOrEmpty(SourcePath))
+                throw new DataAccessLayerException("SourcePath Must not be non Zero");
+
+            try
+            {
+                string values_clause = string.Empty;
+                string parameters_clause = string.Empty;
+
+                using (SQLiteConnection dbConnection = new SQLiteConnection(ConnectionString))
+                {
+                    dbConnection.Open();
+                    SQLiteCommand command = new SQLiteCommand(dbConnection);
+
+                    parameters_clause += "(SourcePath";
+                    values_clause += "(COALESCE((SELECT SourcePath FROM FilesFound WHERE SourcePath = @SourcePath), @SourcePath)";
+                    command.Parameters.Add(new SQLiteParameter("@SourcePath", SourcePath));
+
+                    parameters_clause += ", DateFound";
+                    values_clause += ", COALESCE((SELECT DateFound FROM FilesFound WHERE SourcePath = @SourcePath), @DateFound)";
+
+                    command.Parameters.Add(new SQLiteParameter("@DateFound", DateTime.Now));
+
+                    if (!string.IsNullOrEmpty(DestinationPath))
+                    {
+                        parameters_clause += ", DestinationPath";
+                        values_clause += ", COALESCE((SELECT DestinationPath FROM FilesFound WHERE SourcePath = @SourcePath), @DestinationPath)";
+                        command.Parameters.Add(new SQLiteParameter("@DestinationPath", DestinationPath));
+                    }
+                    if (!string.IsNullOrEmpty(SourceMD5))
+                    {
+                        parameters_clause += ", SourceMD5";
+                        values_clause += ", COALESCE((SELECT SourceMD5 FROM FilesFound WHERE SourcePath = @SourcePath), @SourceMD5)";
+                        command.Parameters.Add(new SQLiteParameter("@SourceMD5", SourceMD5));
+                    } if (!string.IsNullOrEmpty(DestinationMD5))
+                    {
+                        parameters_clause += ", DestinationMD5";
+                        values_clause += ", COALESCE((SELECT DestinationMD5 FROM FilesFound WHERE SourcePath = @SourcePath), @DestinationMD5)";
+                        command.Parameters.Add(new SQLiteParameter("@DestinationMD5", DestinationMD5));
+                    }
+                    if (!string.IsNullOrEmpty(DateModified))
+                    {
+                        parameters_clause += ", DateModified";
+                        values_clause += ", COALESCE((SELECT DateModified FROM FilesFound WHERE SourcePath = @SourcePath), @DateModified)";
+                        command.Parameters.Add(new SQLiteParameter("@DateModified", DateModified));
+                    }
+                    if (!string.IsNullOrEmpty(DateCreated))
+                    {
+                        parameters_clause += ", DateCreated";
+                        values_clause += ", COALESCE((SELECT DateCreated FROM FilesFound WHERE SourcePath = @SourcePath), @DateCreated)";
+                        command.Parameters.Add(new SQLiteParameter("@DateCreated", DateCreated));
+                    }
+                    if (!string.IsNullOrEmpty(DateCopyStarted))
+                    {
+                        parameters_clause += ", DateCopyStarted";
+                        values_clause += ", COALESCE((SELECT DateCopyStarted FROM FilesFound WHERE SourcePath = @SourcePath), @DateCopyStarted)";
+                        command.Parameters.Add(new SQLiteParameter("@DateCopyStarted", DateCopyStarted));
+                    }
+                    if (!string.IsNullOrEmpty(DateCopyCompleted))
+                    {
+                        parameters_clause += ", DateCopyCompleted";
+                        values_clause += ", COALESCE((SELECT DateCopyCompleted FROM FilesFound WHERE SourcePath = @SourcePath), @DateCopyCompleted)";
+                        command.Parameters.Add(new SQLiteParameter("@DateCopyCompleted", DateCopyCompleted));
+                    }
+
+                    parameters_clause += ")";
+                    values_clause += ")";
+
+                    string sql = string.Format(@"INSERT or REPLACE INTO FilesFound 
+                                               {0}
+                                               VALUES {1}", parameters_clause, values_clause);
 
                     command.CommandText = sql;
                     command.ExecuteNonQuery();
@@ -269,12 +360,12 @@ namespace sure_copy
                                     FilesFound 
                                     (
                                     ID                INTEGER PRIMARY KEY UNIQUE,
-                                    SourcePath        VARCHAR (4096) NOT NULL ,
+                                    SourcePath        VARCHAR (4096) NOT NULL UNIQUE,
                                     DestinationPath   VARCHAR (4096) ,
                                     DateFound         DATETIME,
                                     TimesModified     INT            DEFAULT (0),
-                                    SourceMD5               VARCHAR (512),
-                                    DestMD5           VARCHAR (512),
+                                    SourceMD5         VARCHAR (512),
+                                    DestinationMD5           VARCHAR (512),
                                     DateModified      DATETIME,
                                     DateCreated       DATETIME,
                                     DateCopyStarted   DATETIME,
@@ -282,7 +373,7 @@ namespace sure_copy
                                     )";
                     SQLiteCommand command = new SQLiteCommand(sql, dbConnection);
                     command.ExecuteNonQuery();
-                    sql = @"CREATE INDEX Idx_SourcePath ON FilesFound (SourcePath);";
+                    sql = @"CREATE INDEX IF NOT EXISTS Idx_SourcePath ON FilesFound (SourcePath);";
                     command = new SQLiteCommand(sql, dbConnection);
                     command.ExecuteNonQuery();
                     /*
