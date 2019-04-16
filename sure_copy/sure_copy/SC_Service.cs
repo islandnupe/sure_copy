@@ -562,7 +562,11 @@ namespace sure_copy
                             DateTime dateTimeLastModifiedSource = File.GetLastWriteTimeUtc(stringSourceFileName);
                             DateTime dateTimeLastModifiedDestination = File.GetLastWriteTimeUtc(stringDestinationFileName);
 
-                            bool boolLastWriteTime = dateTimeLastModifiedSource == dateTimeLastModifiedDestination;
+                            DateTime dateTimeLastCreateSource = File.GetCreationTimeUtc(stringSourceFileName);
+                            DateTime dateTimeLastCreatedDestination = File.GetCreationTimeUtc(stringDestinationFileName);
+
+                           
+                            bool boolLastWriteTime = dateTimeLastModifiedSource < dateTimeLastModifiedDestination;
                             if (boolLastWriteTime == false)
                             {
                                 m_intLastWriteTimeChecks++;
@@ -614,8 +618,6 @@ namespace sure_copy
 
                         m_intSuccessfulCopyAttempts++;
 
-                        File.GetLastWriteTimeUtc(stringSourceFileName);
-
                         m_db.Upsert(stringSourceFileName, sourceMD5, stringDestinationFileName, destinationMD5,
                              File.GetLastWriteTimeUtc(stringSourceFileName).ToString(), File.GetCreationTimeUtc(stringSourceFileName).ToString(),
                              DateCopyStarted.ToString(), DateCopyCompleted.ToString());
@@ -623,9 +625,14 @@ namespace sure_copy
                     else
                     {
                         m_intTotalCopyOpertionsNotNeeded++;
+                        //m_db.Upsert(stringSourceFileName, sourceMD5, stringDestinationFileName, destinationMD5,
+                        //     File.GetLastWriteTimeUtc(stringSourceFileName).ToString(), File.GetCreationTimeUtc(stringSourceFileName).ToString(),
+                        //     "", "");
 
-                        m_db.Add(stringSourceFileName, sourceMD5, stringDestinationFileName, destinationMD5,
-                            File.GetLastWriteTimeUtc(stringSourceFileName).ToString(), File.GetCreationTimeUtc(stringSourceFileName).ToString(), "", "");
+                        DataSet ds = m_db.Get(stringSourceFileName);
+                        if(ds.Tables[0].Rows.Count == 0)
+                            m_db.Add(stringSourceFileName, sourceMD5, stringDestinationFileName, destinationMD5,
+                                File.GetLastWriteTimeUtc(stringSourceFileName).ToString(), File.GetCreationTimeUtc(stringSourceFileName).ToString(), "", "");
 
                     }
 

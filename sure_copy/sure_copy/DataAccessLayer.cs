@@ -123,8 +123,8 @@ namespace sure_copy
                             string DestinationMD5 = "", string DateModified = "", string DateCreated = "",
                             string DateCopyStarted = "", string DateCopyCompleted = "")
         {
-            if (ID == 0)
-                throw new DataAccessLayerException("ID Must not be non Zero");
+            if (string.IsNullOrEmpty(SourcePath) == true)
+                throw new DataAccessLayerException("Source ID Must not be NUll or empty");
 
             try
             {
@@ -135,51 +135,53 @@ namespace sure_copy
                     dbConnection.Open();
                     SQLiteCommand command = new SQLiteCommand(dbConnection);
                     parameters_clause = string.Empty;
-
+                    /*
                     if (!string.IsNullOrEmpty(SourcePath))
                     {
                         parameters_clause += "SourcePath = @SourcePath";
                         command.Parameters.Add(new SQLiteParameter("@SourcePath", SourcePath));
                     }
+                    */
                     if (!string.IsNullOrEmpty(SourceMD5))
                     {
-                        parameters_clause += "SourceMD5 = @SourceMD5";
+                        parameters_clause += "SourceMD5 = @SourceMD5,";
                         command.Parameters.Add(new SQLiteParameter("@SourceMD5", SourceMD5));
                     }
                     if (!string.IsNullOrEmpty(DestinationPath))
                     {
-                        parameters_clause += "DestinationPath = @DestinationPath";
+                        parameters_clause += "DestinationPath = @DestinationPath,";
                         command.Parameters.Add(new SQLiteParameter("@DestinationPath", DestinationPath));
                     }
                     if (!string.IsNullOrEmpty(DestinationMD5))
                     {
-                        parameters_clause += "DestinationMD5 = @DestinationMD5";
+                        parameters_clause += "DestinationMD5 = @DestinationMD5,";
                         command.Parameters.Add(new SQLiteParameter("@DestinationMD5", DestinationMD5));
                     }
 
                     if (!string.IsNullOrEmpty(DateModified))
                     {
-                        parameters_clause += "DateModified = @DateModified";
+                        parameters_clause += "DateModified = @DateModified,";
                         command.Parameters.Add(new SQLiteParameter("@DateModified", DateModified));
                     }
                     if (!string.IsNullOrEmpty(DateCreated))
                     {
-                        parameters_clause += "DateCreated = @DateCreated";
+                        parameters_clause += "DateCreated = @DateCreated,";
                         command.Parameters.Add(new SQLiteParameter("@DateCreated", DateCreated));
                     }
                     if (!string.IsNullOrEmpty(DateCopyStarted))
                     {
-                        parameters_clause += "DateCopyStarted = @DateCopyStarted";
+                        parameters_clause += "DateCopyStarted = @DateCopyStarted,";
                         command.Parameters.Add(new SQLiteParameter("@DateCopyStarted", DateCopyStarted));
                     }
                     if (!string.IsNullOrEmpty(DateCopyCompleted))
                     {
-                        parameters_clause += "DateCopyCompleted = @DateCopyCompleted";
+                        parameters_clause += "DateCopyCompleted = @DateCopyCompleted,";
                         command.Parameters.Add(new SQLiteParameter("@DateCopyCompleted", DateCopyCompleted));
                     }
 
-                    string sql = string.Format(@"UPDATE FilesFound SET {0} where ID=@ID", parameters_clause);
-                    command.Parameters.Add(new SQLiteParameter("@ID", ID));
+                    parameters_clause = parameters_clause.Trim(',');
+                    string sql = string.Format(@"UPDATE FilesFound SET {0} where SourcePath=@SourcePath", parameters_clause);
+                    command.Parameters.Add(new SQLiteParameter("@SourcePath", SourcePath));
 
                     command.CommandText = sql;
                     command.ExecuteNonQuery();
@@ -243,27 +245,32 @@ namespace sure_copy
                     {
                         parameters_clause += ", DateModified";
                         values_clause += ", COALESCE((SELECT DateModified FROM FilesFound WHERE SourcePath = @SourcePath), @DateModified)";
-                        command.Parameters.Add(new SQLiteParameter("@DateModified", DateModified));
+                        command.Parameters.Add(new SQLiteParameter("@DateModified", DateTime.Parse(DateModified)));
                     }
                     if (!string.IsNullOrEmpty(DateCreated))
                     {
                         parameters_clause += ", DateCreated";
                         values_clause += ", COALESCE((SELECT DateCreated FROM FilesFound WHERE SourcePath = @SourcePath), @DateCreated)";
-                        command.Parameters.Add(new SQLiteParameter("@DateCreated", DateCreated));
+                        command.Parameters.Add(new SQLiteParameter("@DateCreated", DateTime.Parse(DateCreated)));
                     }
                     if (!string.IsNullOrEmpty(DateCopyStarted))
                     {
                         parameters_clause += ", DateCopyStarted";
                         values_clause += ", COALESCE((SELECT DateCopyStarted FROM FilesFound WHERE SourcePath = @SourcePath), @DateCopyStarted)";
-                        command.Parameters.Add(new SQLiteParameter("@DateCopyStarted", DateCopyStarted));
+                        command.Parameters.Add(new SQLiteParameter("@DateCopyStarted", DateTime.Parse(DateCopyStarted)));
                     }
                     if (!string.IsNullOrEmpty(DateCopyCompleted))
                     {
                         parameters_clause += ", DateCopyCompleted";
                         values_clause += ", COALESCE((SELECT DateCopyCompleted FROM FilesFound WHERE SourcePath = @SourcePath), @DateCopyCompleted)";
-                        command.Parameters.Add(new SQLiteParameter("@DateCopyCompleted", DateCopyCompleted));
+                        command.Parameters.Add(new SQLiteParameter("@DateCopyCompleted", DateTime.Parse(DateCopyCompleted)));
                     }
 
+
+                    parameters_clause += ", TimesModified";
+                    values_clause += ", COALESCE((SELECT TimesModified+1 FROM FilesFound WHERE SourcePath = @SourcePath), @TimesModified)";
+                    command.Parameters.Add(new SQLiteParameter("@TimesModified", 1));
+                   
                     parameters_clause += ")";
                     values_clause += ")";
 
@@ -325,7 +332,19 @@ namespace sure_copy
                 using (SQLiteConnection dbConnection = new SQLiteConnection(ConnectionString))
                 {
                     dbConnection.Open();
-                    string sql = string.Format(@"SELECT * FROM FilesFound where SourcePath=@SourcePath");
+                    string sql = string.Format(@"SELECT ID,
+                                                   SourcePath,
+                                                   DestinationPath,
+                                                   DateFound,
+                                                   TimesModified,
+                                                   SourceMD5,
+                                                   DestinationMD5,
+                                                   DateModified,
+                                                   DateCreated,
+                                                   DateCopyStarted,
+                                                   DateCopyCompleted FROM FilesFound where SourcePath=@SourcePath");
+
+                    sql = string.Format(@"SELECT DateModified FROM FilesFound where SourcePath=@SourcePath");
                     SQLiteCommand command = new SQLiteCommand(sql, dbConnection);
                     command.Parameters.Add(new SQLiteParameter("@SourcePath", SourcePath));
 
@@ -352,7 +371,7 @@ namespace sure_copy
             {
                 if (!System.IO.File.Exists(m_stringDatabaseFile))
                     SQLiteConnection.CreateFile(m_stringDatabaseFile);
-                ConnectionString = string.Format("Data Source={0};Version=3;Pooling=True;Max Pool Size=20;", m_stringDatabaseFile);
+                ConnectionString = string.Format("Data Source={0};Version=3;Pooling=True;Max Pool Size=20;datetimeformat=CurrentCulture", m_stringDatabaseFile);
                 using (SQLiteConnection dbConnection = new SQLiteConnection(ConnectionString))
                 {
                     dbConnection.Open();
