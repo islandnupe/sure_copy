@@ -56,7 +56,7 @@ namespace sure_copy
                     values_clause = "(@SourcePath, @DateFound";
                     command.Parameters.Add(new SQLiteParameter("@SourcePath", SourcePath));
 
-                    command.Parameters.Add(new SQLiteParameter("@DateFound", DateTime.Now));
+                    command.Parameters.Add(new SQLiteParameter("@DateFound", DateTime.Now.ToString()));
 
                     if (!string.IsNullOrEmpty(DestinationPath))
                     {
@@ -220,9 +220,10 @@ namespace sure_copy
                     command.Parameters.Add(new SQLiteParameter("@SourcePath", SourcePath));
 
                     parameters_clause += ", DateFound";
-                    values_clause += ", COALESCE((SELECT DateFound FROM FilesFound WHERE SourcePath = @SourcePath), @DateFound)";
+                    //values_clause += ", COALESCE((SELECT DateFound FROM FilesFound WHERE SourcePath = @SourcePath), @DateFound)";
+                    values_clause += ", @DateFound";
 
-                    command.Parameters.Add(new SQLiteParameter("@DateFound", DateTime.Now));
+                    command.Parameters.Add(new SQLiteParameter("@DateFound", DateTime.Now.ToString()));
 
                     if (!string.IsNullOrEmpty(DestinationPath))
                     {
@@ -256,13 +257,15 @@ namespace sure_copy
                     if (!string.IsNullOrEmpty(DateCopyStarted))
                     {
                         parameters_clause += ", DateCopyStarted";
-                        values_clause += ", COALESCE((SELECT DateCopyStarted FROM FilesFound WHERE SourcePath = @SourcePath), @DateCopyStarted)";
+                        //values_clause += ", COALESCE((SELECT DateCopyStarted FROM FilesFound WHERE SourcePath = @SourcePath), @DateCopyStarted)";
+                        values_clause += ", @DateCopyStarted";
                         command.Parameters.Add(new SQLiteParameter("@DateCopyStarted", DateTime.Parse(DateCopyStarted)));
                     }
                     if (!string.IsNullOrEmpty(DateCopyCompleted))
                     {
                         parameters_clause += ", DateCopyCompleted";
-                        values_clause += ", COALESCE((SELECT DateCopyCompleted FROM FilesFound WHERE SourcePath = @SourcePath), @DateCopyCompleted)";
+                        //values_clause += ", COALESCE((SELECT DateCopyCompleted FROM FilesFound WHERE SourcePath = @SourcePath), @DateCopyCompleted)";
+                        values_clause += ", @DateCopyCompleted";
                         command.Parameters.Add(new SQLiteParameter("@DateCopyCompleted", DateTime.Parse(DateCopyCompleted)));
                     }
 
