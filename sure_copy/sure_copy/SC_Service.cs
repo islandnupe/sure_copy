@@ -85,6 +85,7 @@ namespace sure_copy
         int m_intFailedMD5Checks = 0;
         int m_intLastWriteTimeChecks = 0;
         long m_longTotalBytesCopied = -1;
+        int m_intMaxNumberOfConcurrentThreads = 1;
 
         int m_intBufferSizeMB = 1;
 
@@ -181,7 +182,7 @@ namespace sure_copy
                 m_eventWriteToLog(stringMsg, LogMessageType.MiscellaneousAlwaysDisplay);
                 stringMsg = string.Format("\r\tTime of Day to Run [{0}]", m_dateTimeOfDayToRun.ToShortTimeString());
                 m_eventWriteToLog(stringMsg, LogMessageType.MiscellaneousAlwaysDisplay);
-                StartHttpServer(m_intHttpPort);
+                //StartHttpServer(m_intHttpPort);
 
                 ReportDestinationDriveSpace();
 
@@ -329,9 +330,10 @@ namespace sure_copy
             //var m_listOfCopyOperations = new List<Action>();
             m_listOfCopyOperations.Clear();
             CopyDirectories(m_stringSourcePath, m_stringDestinationPath);
-            string stringMsg = string.Format("Number of Files to be copied total to {0}", m_listOfCopyOperations.Count);
+            string stringMsg = string.Format("MaxNumberOfConcurrentThreads [{0}] Number of Files to be copied total to {1}", m_intMaxNumberOfConcurrentThreads, m_listOfCopyOperations.Count);
             m_eventWriteToLog(stringMsg, LogMessageType.MiscellaneousAlwaysDisplay);
-            var options = new ParallelOptions { MaxDegreeOfParallelism = 3 };
+
+            var options = new ParallelOptions { MaxDegreeOfParallelism = m_intMaxNumberOfConcurrentThreads };
             Parallel.Invoke(options, m_listOfCopyOperations.ToArray());
 
         }
@@ -663,7 +665,7 @@ namespace sure_copy
         {
             try
             {
-                //m_intTotalCopyAttempts++;
+                m_intTotalCopyAttempts++;
 
                 //Ignore directories
                 FileAttributes attr = File.GetAttributes(stringSourceFileName);
@@ -751,17 +753,17 @@ namespace sure_copy
                         myCopier.Copy();
                         DateTime DateCopyCompleted = DateTime.Now;
 
-                        //m_intSuccessfulCopyAttempts++;
+                        m_intSuccessfulCopyAttempts++;
                         db.Upsert(stringSourceFileName, sourceMD5, stringDestinationFileName, destinationMD5,
                              File.GetLastWriteTime(stringSourceFileName).ToString(), File.GetCreationTime(stringSourceFileName).ToString(),
                              DateCopyStarted.ToString(), DateCopyCompleted.ToString());
                     }
                     else
                     {
-                        //m_intTotalCopyOpertionsNotNeeded++;
                         //m_db.Upsert(stringSourceFileName, sourceMD5, stringDestinationFileName, destinationMD5,
                         //     File.GetLastWriteTimeUtc(stringSourceFileName).ToString(), File.GetCreationTimeUtc(stringSourceFileName).ToString(),
                         //     "", "");
+                        m_intTotalCopyOpertionsNotNeeded++;
 
                         DataSet ds = db.Get(stringSourceFileName);
                         if (ds.Tables[0].Rows.Count == 0)
@@ -774,7 +776,7 @@ namespace sure_copy
             }
             catch (Exception Ex)
             {
-                //m_intFailedCopyAttempts++;
+                m_intFailedCopyAttempts++;
                 string stringMsg = string.Format("An Exception Fired while copying {0} to {1}. {2}", stringSourceFileName, stringDestinationPath, Ex.ToString());
                 m_eventWriteToLog(stringMsg, LogMessageType.ErrorAlwaysDisplay);
             }
@@ -1052,6 +1054,10 @@ namespace sure_copy
 
                 if (int.TryParse(ConfigurationManager.AppSettings["HTTP_PORT"].ToString(), out m_intHttpPort) == false)
                     m_intHttpPort = 8181;
+
+                if (int.TryParse(ConfigurationManager.AppSettings["MaxNumberOfConcurrentThreads"].ToString(), out m_intMaxNumberOfConcurrentThreads) == false)
+                    m_intMaxNumberOfConcurrentThreads = 1;
+
 
                 m_stringSourcePath = ConfigurationManager.AppSettings["SourcePath"].ToString();
 
