@@ -96,7 +96,7 @@ namespace sure_copy
         SQLiteConnection m_dbConnection;
         DataAccessLayer m_db;
         object lockObject = new object();
-
+        List<Action> m_listOfCopyOperations = new List<Action>();
         #endregion
 
         public SC_Service()
@@ -325,8 +325,15 @@ namespace sure_copy
 
 
         private void DoWork()
-        {            
+        {
+            //var m_listOfCopyOperations = new List<Action>();
+            m_listOfCopyOperations.Clear();
             CopyDirectories(m_stringSourcePath, m_stringDestinationPath);
+            string stringMsg = string.Format("Number of Files to be copied total to {0}", m_listOfCopyOperations.Count);
+            m_eventWriteToLog(stringMsg, LogMessageType.MiscellaneousAlwaysDisplay);
+            var options = new ParallelOptions { MaxDegreeOfParallelism = 3 };
+            Parallel.Invoke(options, m_listOfCopyOperations.ToArray());
+
         }
 
         private void ReportDestinationDriveSpace()
@@ -559,24 +566,25 @@ namespace sure_copy
                         if (m_boolCheckLastWriteTime == true && boolDestinationFileExists == true)
                         {
                             //If LastWriteTime check fails, perform copy
-                            DateTime dateTimeLastModifiedSource = File.GetLastWriteTimeUtc(stringSourceFileName);
-                            DateTime dateTimeLastModifiedDestination = File.GetLastWriteTimeUtc(stringDestinationFileName);
+                            DateTime dateTimeLastModifiedSource = File.GetLastWriteTime(stringSourceFileName);
+                            DateTime dateTimeLastModifiedDestination = File.GetLastWriteTime(stringDestinationFileName);
 
-                            DateTime dateTimeLastCreateSource = File.GetCreationTimeUtc(stringSourceFileName);
-                            DateTime dateTimeLastCreatedDestination = File.GetCreationTimeUtc(stringDestinationFileName);
+                            DateTime dateTimeLastCreateSource = File.GetCreationTime(stringSourceFileName);
+                            DateTime dateTimeLastCreatedDestination = File.GetCreationTime(stringDestinationFileName);
 
                            
                             bool boolLastWriteTime = dateTimeLastModifiedSource < dateTimeLastModifiedDestination;
-                            if (boolLastWriteTime == false)
+                            //If source modified time is greater than/more recent than the destination modified time, then flag to perform copy
+                            if (dateTimeLastModifiedSource > dateTimeLastModifiedDestination)
                             {
                                 m_intLastWriteTimeChecks++;
                                 boolPerformCopy = true;
                                 string stringMsg = string.Format("Last Write Times differ for [{0}] and [{1}] [{2}]-[{3}]", stringSourceFileName, stringDestinationFileName, dateTimeLastModifiedSource, dateTimeLastModifiedDestination);
-                                m_eventWriteToLog(stringMsg, LogMessageType.Error);
+                                m_eventWriteToLog(stringMsg, LogMessageType.Miscellaneous);
                             }
                             else
                             {
-                                boolPerformCopy = false;
+                                boolPerformCopy = false; 
                             }
                         }
 
@@ -619,7 +627,7 @@ namespace sure_copy
                         m_intSuccessfulCopyAttempts++;
 
                         m_db.Upsert(stringSourceFileName, sourceMD5, stringDestinationFileName, destinationMD5,
-                             File.GetLastWriteTimeUtc(stringSourceFileName).ToString(), File.GetCreationTimeUtc(stringSourceFileName).ToString(),
+                             File.GetLastWriteTime(stringSourceFileName).ToString(), File.GetCreationTime(stringSourceFileName).ToString(),
                              DateCopyStarted.ToString(), DateCopyCompleted.ToString());
                     }
                     else
@@ -632,7 +640,7 @@ namespace sure_copy
                         DataSet ds = m_db.Get(stringSourceFileName);
                         if(ds.Tables[0].Rows.Count == 0)
                             m_db.Add(stringSourceFileName, sourceMD5, stringDestinationFileName, destinationMD5,
-                                File.GetLastWriteTimeUtc(stringSourceFileName).ToString(), File.GetCreationTimeUtc(stringSourceFileName).ToString(), "", "");
+                                File.GetLastWriteTime(stringSourceFileName).ToString(), File.GetCreationTime(stringSourceFileName).ToString(), "", "");
 
                     }
 
@@ -647,6 +655,132 @@ namespace sure_copy
             finally
             {
                 m_stringCurrentFileBeingCopied = string.Empty;
+            }
+        }
+
+
+        private void CopyFileThreadSafe(string stringSourceFileName, string stringDestinationPath)
+        {
+            try
+            {
+                //m_intTotalCopyAttempts++;
+
+                //Ignore directories
+                FileAttributes attr = File.GetAttributes(stringSourceFileName);
+                if ((attr & FileAttributes.Directory) != FileAttributes.Directory)
+                {
+                    string stringDestinationFileName = string.Format(@"{0}\{1}", stringDestinationPath, Path.GetFileName(stringSourceFileName));
+
+                    string sourceMD5 = string.Empty;
+                    string destinationMD5 = string.Empty;
+                    bool boolPerformCopy = false;
+                    bool boolDestinationFileExists = false;
+
+                    //If file exists at destination, don't copy it..unless we need to do an MD5 
+                    if (File.Exists(stringDestinationFileName))
+                    {
+                        boolPerformCopy = false;
+                        boolDestinationFileExists = true;
+                    }
+                    else
+                        boolPerformCopy = true;
+
+                    if (true)
+                    {
+                        //If we need to do a LastWriteTime check
+                        if (m_boolCheckLastWriteTime == true && boolDestinationFileExists == true)
+                        {
+                            //If LastWriteTime check fails, perform copy
+                            DateTime dateTimeLastModifiedSource = File.GetLastWriteTime(stringSourceFileName);
+                            DateTime dateTimeLastModifiedDestination = File.GetLastWriteTime(stringDestinationFileName);
+
+                            DateTime dateTimeLastCreateSource = File.GetCreationTime(stringSourceFileName);
+                            DateTime dateTimeLastCreatedDestination = File.GetCreationTime(stringDestinationFileName);
+
+
+                            bool boolLastWriteTime = dateTimeLastModifiedSource < dateTimeLastModifiedDestination;
+                            //If source modified time is greater than/more recent than the destination modified time, then flag to perform copy
+                            if (dateTimeLastModifiedSource > dateTimeLastModifiedDestination)
+                            {
+                                //m_intLastWriteTimeChecks++;
+                                boolPerformCopy = true;
+                                string stringMsg = string.Format("Last Write Times differ for [{0}] and [{1}] [{2}]-[{3}]", stringSourceFileName, stringDestinationFileName, dateTimeLastModifiedSource, dateTimeLastModifiedDestination);
+                                m_eventWriteToLog(stringMsg, LogMessageType.Miscellaneous);
+                            }
+                            else
+                            {
+                                boolPerformCopy = false;
+                            }
+                        }
+
+                        //If we need to do a CRC check
+                        if (m_boolCheckMD5 == true && boolDestinationFileExists == true)
+                        {
+                            //If MD5 check fails, perform copy
+                            sourceMD5 = GetMD5(stringSourceFileName);
+                            destinationMD5 = GetMD5(stringDestinationFileName);
+
+                            bool boolMD5Passed = sourceMD5 == destinationMD5;
+                            if (boolMD5Passed == false)
+                            {
+                                m_intFailedMD5Checks++;
+                                boolPerformCopy = true;
+                                string stringMsg = string.Format("MD5 Check failed for [{0}] and [{1}]", stringSourceFileName, stringDestinationFileName);
+                                m_eventWriteToLog(stringMsg, LogMessageType.Error);
+                            }
+                            else
+                            {
+                                boolPerformCopy = false;
+                            }
+                        }
+                    }
+
+                    //if file doesn't exist at destination, check if directory exists. If directory doesn't exist, create it
+                    if (boolDestinationFileExists != true && boolPerformCopy == true)
+                        if (Directory.Exists(m_stringDestinationPath) == false)
+                            Directory.CreateDirectory(m_stringDestinationPath);
+
+                    DataAccessLayer db = new DataAccessLayer(m_stringDatabaseFile);
+
+                    if (boolPerformCopy == true)
+                    {
+                        CustomFileCopier myCopier = new CustomFileCopier(stringSourceFileName, stringDestinationFileName, m_intBufferSizeMB);
+                        myCopier.OnComplete += CopyCompleted;
+                        myCopier.OnProgressChanged += CopyProgress;
+                        DateTime DateCopyStarted = DateTime.Now;
+                        myCopier.Copy();
+                        DateTime DateCopyCompleted = DateTime.Now;
+
+                        //m_intSuccessfulCopyAttempts++;
+                        db.Upsert(stringSourceFileName, sourceMD5, stringDestinationFileName, destinationMD5,
+                             File.GetLastWriteTime(stringSourceFileName).ToString(), File.GetCreationTime(stringSourceFileName).ToString(),
+                             DateCopyStarted.ToString(), DateCopyCompleted.ToString());
+                    }
+                    else
+                    {
+                        //m_intTotalCopyOpertionsNotNeeded++;
+                        //m_db.Upsert(stringSourceFileName, sourceMD5, stringDestinationFileName, destinationMD5,
+                        //     File.GetLastWriteTimeUtc(stringSourceFileName).ToString(), File.GetCreationTimeUtc(stringSourceFileName).ToString(),
+                        //     "", "");
+
+                        DataSet ds = db.Get(stringSourceFileName);
+                        if (ds.Tables[0].Rows.Count == 0)
+                            db.Add(stringSourceFileName, sourceMD5, stringDestinationFileName, destinationMD5,
+                                File.GetLastWriteTime(stringSourceFileName).ToString(), File.GetCreationTime(stringSourceFileName).ToString(), "", "");
+
+                    }
+
+                }
+            }
+            catch (Exception Ex)
+            {
+                //m_intFailedCopyAttempts++;
+                string stringMsg = string.Format("An Exception Fired while copying {0} to {1}. {2}", stringSourceFileName, stringDestinationPath, Ex.ToString());
+                m_eventWriteToLog(stringMsg, LogMessageType.ErrorAlwaysDisplay);
+            }
+            finally
+            {
+                //m_stringCurrentFileBeingCopied = string.Empty;
             }
         }
 
@@ -818,8 +952,13 @@ namespace sure_copy
             {
                 try
                 {
-                    CopyFileNew(stringSourceFileFullPath, stringDestinationPath);
-
+                    //CopyFileNew(stringSourceFileFullPath, stringDestinationPath);
+                    m_listOfCopyOperations.Add(() =>
+                    {
+                        CopyFileThreadSafe(stringSourceFileFullPath, stringDestinationPath);
+                    });
+                    
+                    
                     if (m_boolUSER_HALT_OPERATIONS == true)
                     {
                         string stringMsg = string.Format("Halting Operations...");
