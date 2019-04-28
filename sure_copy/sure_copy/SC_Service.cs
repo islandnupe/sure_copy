@@ -182,7 +182,7 @@ namespace sure_copy
                 m_eventWriteToLog(stringMsg, LogMessageType.MiscellaneousAlwaysDisplay);
                 stringMsg = string.Format("\r\tTime of Day to Run [{0}]", m_dateTimeOfDayToRun.ToShortTimeString());
                 m_eventWriteToLog(stringMsg, LogMessageType.MiscellaneousAlwaysDisplay);
-                //StartHttpServer(m_intHttpPort);
+                StartHttpServer(m_intHttpPort);
 
                 ReportDestinationDriveSpace();
 
@@ -666,6 +666,7 @@ namespace sure_copy
             try
             {
                 m_intTotalCopyAttempts++;
+                m_stringCurrentFileBeingCopied = stringSourceFileName;
 
                 //Ignore directories
                 FileAttributes attr = File.GetAttributes(stringSourceFileName);
@@ -1186,6 +1187,10 @@ namespace sure_copy
                 sb.Append(stringMsg);
             }
 
+            stringMsg = string.Format("<br>MaxNumberOfConcurrentThreads [{0}] Total Copy Operations [{1}] Performed Operations [{2}] <br>", m_intMaxNumberOfConcurrentThreads, m_listOfCopyOperations.Count, m_intTotalCopyAttempts);
+            sb.Append(stringMsg);
+
+
             if (m_stringCurrentFileBeingCopied != string.Empty)
             {
                 stringMsg = string.Format("<br>The current file being copied is [{0}]", m_stringCurrentFileBeingCopied);
@@ -1459,7 +1464,8 @@ namespace sure_copy
 
         void CopyCompleted(string FilePath, long TotalBytes)
         {
-            string stringMsg = string.Format("Copying of File {0} completed. File Size {1}", FilePath, BytesToString(TotalBytes));
+            string stringMsg = string.Format("Copying of File {0} completed. File Size {1}. SuccessfulCopyAttempts [{2}] CopyOpertionsNotNeeded [{3}] FailedMD5Checks [{4}] FailedCopyAttempts [{5}]",
+                FilePath, BytesToString(TotalBytes), m_intSuccessfulCopyAttempts, m_intTotalCopyOpertionsNotNeeded, m_intFailedMD5Checks, m_intFailedCopyAttempts);
             m_eventWriteToLog(stringMsg, LogMessageType.Miscellaneous);
             m_longTotalBytesCopied += TotalBytes;
         }

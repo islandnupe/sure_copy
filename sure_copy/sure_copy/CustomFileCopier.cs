@@ -53,8 +53,8 @@ namespace sure_copy
                         }
                     }
                 }
-                File.SetCreationTimeUtc(DestFilePath, File.GetCreationTimeUtc(SourceFilePath));
-                File.SetLastWriteTimeUtc(DestFilePath, File.GetLastWriteTimeUtc(SourceFilePath));
+                File.SetCreationTime(DestFilePath, File.GetCreationTime(SourceFilePath));
+                File.SetLastWriteTime(DestFilePath, File.GetLastWriteTime(SourceFilePath));
             }
             OnComplete(SourceFilePath, totalBytes);
         }
